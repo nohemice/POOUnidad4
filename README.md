@@ -1,65 +1,74 @@
-# 📝 Documento de Síntesis Técnica: Gestión de Contenido Audiovisual
+# 🎥 Plataforma de Gestión de Medios Digitales (PGMD)
 
-## 1. Gestión de Persistencia: Mecanismos de I/O de Alta Fidelidad
+## 🎯 Objetivo General y Diseño del Sistema
 
-La funcionalidad de almacenamiento de datos se diseñó mediante una arquitectura de **desacoplamiento total**, fundamentada en contratos de abstracción para garantizar la intercambiabilidad tecnológica.
-
-* **Contrato de Persistencia:** El sistema utiliza la interfaz **`IFileHandler`** para definir las responsabilidades de serialización/deserialización. La clase **`CsvFileHandler`** se encarga de la materialización de estos contratos, interactuando específicamente con el repositorio `contenidos.csv`. Esta dependencia de la interfaz facilita la **sustitución de la fuente de datos** sin impacto en el núcleo de la lógica de negocio.
-* **Aseguramiento de Recursos:** Para mitigar el riesgo de **filtración de recursos** del sistema operativo, las operaciones de entrada/salida (`loadContents` y `saveContents`) están envueltas en la construcción **`try-with-resources`**. Esta disciplina técnica asegura la clausura automática y eficiente de los flujos (`BufferedReader`, `BufferedWriter`), garantizando la **integridad operativa** y la eficiencia de la memoria.
-* **Provisión de Infraestructura:** El *framework* incluye una validación previa a la escritura que comprueba la existencia del *path* de datos (`data`). En caso de ausencia, la aplicación ejecuta la **creación programática y transparente** del directorio. Esta característica infunde al sistema una **capacidad de autoinicialización**, haciendo la aplicación altamente resiliente a variaciones del entorno de ejecución.
-* **Mapeo Polimórfico (Parsing):** La función de lectura ejecuta la **deserialización de objetos** mediante la tokenización de registros (`String.split(",")`). Un flujo condicional subsiguiente evalúa el identificador de tipo para invocar el constructor adecuado del subtipo **`ContenidoAudiovisual`**, manteniendo así la consistencia y la integridad de la **jerarquía de herencia** durante la instanciación.
+El proyecto PGMD es una aplicación desarrollada en **Java** cuyo propósito es administrar un inventario de contenido audiovisual. El diseño se enfoca en la implementación práctica de principios de **Ingeniería de Software Avanzada**, incluyendo la arquitectura **MVC**, la aplicación estricta de las normas **SOLID**, la producción de **código limpio** y una estrategia integral de **pruebas unitarias**.
 
 ---
 
-## 2. Optimización del Código Base: Cohesión y Legibilidad
+## I. Arquitectura y Fundamentos de Implementación
 
-La fase de refactorización se centró en elevar los estándares de la calidad del código, enfocándose en la **cohesión interna** de las clases y la **claridad de las interfaces**.
+### 1. Robustez en la Persistencia de Datos (I/O)
 
-* **Redefinición de Responsabilidad Funcional:** El método **`mostrarDetalles()`** fue reestructurado para alinearlo con el Principio de Responsabilidad Única (**SRP**). Su nueva función es generar y **devolver la representación textual** del objeto, eliminando la impresión directa a la consola. Este cambio desacopla la **generación del dato** de su **presentación**, confiriendo mayor versatilidad y capacidad de prueba a la función.
-* **Normalización de Inicialización:** Se corrigieron anomalías lógicas y fallas de inicialización en las firmas de los **constructores** (`Cortometraje`, `Podcast`, etc.), garantizando que toda instancia se cree en un **estado válido y completo**. Asimismo, se eliminó un argumento **superfluo** en la clase `SerieDeTV`, simplificando su API.
-* **Eficiencia en el Manejo de Cadenas:** La construcción de mensajes de salida utiliza la clase **`StringBuilder`** en lugar de la sobrecarga del operador de concatenación (`+`). Esta es una optimización crucial que **minimiza la sobrecarga** del *Garbage Collector* al reducir la creación de objetos `String` efímeros, lo que se traduce en una mejora tangible del **rendimiento y la gestión de memoria** del sistema.
+Se estableció una capa de manejo de archivos enfocada en la fiabilidad y la gestión segura de fallos.
 
----
+* **Operaciones de Archivo:** El sistema está diseñado para **serializar** el estado interno (el catálogo de contenidos) hacia el archivo `contenidos.csv` y para **deserializar** los datos desde el mismo archivo, reconstruyendo los objetos **`ContenidoAudiovisual`** y sus subtipos al inicio.
+* **Tolerancia a Fallos:** Se implementó el **manejo estructurado de excepciones** (`IOException`, `FileNotFoundException`) para garantizar que el programa pueda recuperarse o cerrar de forma segura ante cualquier error de entrada o salida de datos.
 
-## 3. Principios SOLID: Estabilidad Arquitectónica y Flexibilidad
+### 2. Principios de Diseño Orientado a Objetos (SOLID)
 
-El diseño estructural está rigurosamente gobernado por los principios **S.O.L.I.D.**, asegurando un marco de trabajo maleable y de fácil mantenimiento. 
+La arquitectura está firmemente cimentada en los principios **SOLID**, lo que asegura un alto grado de **modularidad y flexibilidad**: 
 
-* **Cohesión Funcional (SRP):** La segregación de responsabilidades es patente. El servicio (`ContentService`) se concentra en la lógica de negocio, la vista (`ConsoleView`) en la interacción con el usuario, y el gestor de archivos (`CsvFileHandler`) en la capa I/O.
-* **Diseño para la Extensión (OCP):** La jerarquía de `ContenidoAudiovisual` está configurada para ser ampliable. La introducción de nuevos tipos de contenido se efectúa mediante la **extensión** de la clase base, preservando la estabilidad del *core* del sistema (evitando modificaciones).
-* **Consistencia de Contrato (LSP):** La garantía de **sustitución** se mantiene a través de la implementación uniforme de `mostrarDetalles()` en todos los subtipos, asegurando un manejo polimórfico sin introducir efectos colaterales inesperados.
-* **Abstracción de Dependencia (DIP):** El módulo de alto nivel (`ContentService`) se relaciona con la abstracción (`IFileHandler`) y no con la implementación concreta, asegurando la **inversión de la dependencia** y facilitando la migración tecnológica.
+* **Separación de Competencias (SRP):** Las responsabilidades están distribuidas de forma inequívoca: el **`ContentService`** es el dominio de la lógica, el **`ConsoleView`** maneja la interfaz de usuario, y el **`CsvFileHandler`** se dedica exclusivamente al acceso a datos.
+* **Extensibilidad Controlada (OCP):** La jerarquía de herencia de **`ContenidoAudiovisual`** permite la introducción de nuevos tipos de contenido (extensión) sin requerir modificaciones en las clases ya existentes (cierre a la modificación).
+* **Intercambiabilidad (LSP):** Todos los subtipos de contenido pueden ser sustituidos por la clase base en cualquier punto de la aplicación, manteniendo el comportamiento esperado gracias a la consistencia de sus contratos.
+* **Inversión de Control (DIP):** El servicio principal (**`ContentService`**) opera contra la abstracción (**`IFileHandler`**), lo que le permite desentenderse de la implementación específica de la persistencia y cambiarla fácilmente si fuera necesario.
 
----
+### 3. Calidad del Código y Refactorización
 
-## 4. Patrón de Diseño MVC: Arquitectura de Tres Capas Desacopladas
+Se ejecutó una refactorización con el objetivo de optimizar la **mantenibilidad** y la **legibilidad**:
 
-La aplicación sigue el patrón **Modelo-Vista-Controlador (MVC)**, estableciendo un marco de trabajo donde cada componente tiene una jurisdicción bien definida, lo que potencia la **modularidad** y la **trazabilidad**. 
+* **Modularidad de Salida:** Se modificó la funcionalidad de **`mostrarDetalles()`** en las clases de contenido para que su única función sea **retornar la cadena de texto formateada** del detalle, en lugar de imprimirla directamente. Esta mejora desacopla la lógica de datos de la lógica de presentación.
+* **Coherencia y Claridad:** Se eliminaron parámetros superfluos de constructores (`SerieDeTV`) y se corrigieron inconsistencias en la inicialización de objetos (`Cortometraje`, `Podcast`), asegurando que la interfaz pública de las clases sea más limpia y que la creación de objetos sea predecible.
 
-### 🔹 Módulo de Datos (El Modelo)
+### 4. Modelo Arquitectónico (MVC)
 
-El **Modelo** abarca las entidades y las reglas del dominio (`ContenidoAudiovisual` y derivados). Su única responsabilidad es **gestionar el estado de los datos** y su coherencia, siendo completamente ajeno a los detalles de la presentación o el control del flujo.
+El sistema se estructura siguiendo el patrón **Modelo-Vista-Controlador**, proveyendo una clara segmentación de las responsabilidades: 
 
-### 🔹 Módulo de Orquestación (El Controlador)
+[Image of the Model-View-Controller (MVC) components]
 
-El **Controlador** (`ContentService`) funge como el punto de entrada para las acciones del usuario. Su rol es **procesar las peticiones**, validar y ejecutar las transacciones de negocio, interactuar con el Modelo para modificar el estado y, finalmente, seleccionar el recurso de presentación (la Vista) para el despliegue del resultado.
 
-### 🔹 Módulo de Interfaz (La Vista)
+* **Modelo:** Las clases del paquete `uni1a` (las entidades de contenido) almacenan el estado y aplican la lógica específica del dominio.
+* **Controlador:** La clase **`ContentService`** actúa como el gestor de la aplicación, recibiendo comandos de la Vista, aplicando la lógica de negocio y coordinando el acceso a datos.
+* **Vista:** La clase **`ConsoleView`** se limita a la interacción con el usuario (mostrar menús y capturar *input*).
 
-La **Vista** (`ConsoleView`) es el canal de comunicación con el usuario. Es responsable de la **captura de eventos de entrada** y de la **representación visual** del Modelo, basándose estrictamente en los datos que le proporciona el Controlador. La Vista no contiene lógica de negocio.
+### 5. Aseguramiento de la Calidad (Testing)
 
----
+Se desarrolló una suite de pruebas para verificar la fiabilidad del sistema.
 
-## 5. Pruebas Unitarias: Verificación Rigurosa de la Lógica
-
-Se implementó una estrategia de **aseguramiento de la calidad** basada en pruebas unitarias deterministas para validar el comportamiento del código base.
-
-* **Entorno de Verificación:** La metodología se apoya en **JUnit 5** para la orquestación de pruebas y **Mockito** para la construcción de **simulacros (mocks)**, esenciales para aislar las unidades bajo prueba.
-* **Aislamiento y Determinismo:** El caso **`ContentServiceTest`** ejemplifica el uso de *mocking* para el `IFileHandler`. Al simular las dependencias externas, la prueba valida que la lógica del servicio (ej., la correcta población de datos) es **independiente** del estado real del sistema de archivos. Esto garantiza que las pruebas sean **rápidas** y **altamente deterministas**.
-* **Robustez del Testing:** El uso de simulacros asegura que un cambio en la implementación de la persistencia (ej. migración a una nueva biblioteca CSV) no invalide las pruebas de la lógica de negocio, demostrando una **alta calidad y bajo acoplamiento** en la estrategia de *testing*.
+* **Frameworks:** Se empleó **JUnit 5** como el *framework* principal y **Mockito** para la simulación de objetos y dependencias.
+* **Aislamiento:** Esta combinación permite probar la lógica de negocio (**`ContentService`**) de forma aislada. Mediante el *mocking* de la interfaz `IFileHandler`, se garantiza que la funcionalidad clave (ej., la carga de datos) se valide sin depender de las operaciones reales del sistema de archivos.
 
 ---
 
-## Conclusiones Estratégicas
+## II. Guía de Despliegue y Pruebas
 
-El proyecto constituye un ejemplo de **excelencia en ingeniería de software**. La adopción consciente de **SOLID y MVC** ha dotado a la aplicación de una estructura que favorece la **extensibilidad** y la **mantenibilidad** a largo plazo. La validación constante mediante **pruebas unitarias robustas** confirma la fiabilidad del código central, elevando el proyecto de una simple funcionalidad a una solución de software profesionalmente diseñada.
+### ⚙️ Requerimientos del Entorno
+
+* **JDK:** Versión 16 o posterior.
+* **IDE:** Se recomienda usar un entorno de desarrollo como IntelliJ IDEA.
+
+### 🚀 Instrucciones de Arranque
+
+1.  **Clonación:** Obtenga el código fuente desde el repositorio:
+    ```bash
+    git clone <URL_DEL_REPOSITORIO>
+    ```
+2.  **Configuración del IDE:** Abra el directorio del proyecto en IntelliJ IDEA y verifique que el **SDK del proyecto** esté configurado a una versión compatible de Java.
+3.  **Ejecución:** Localice el punto de entrada, **`MainController.java`**, y ejecute el método `main()` para iniciar la aplicación de consola.
+
+### ✅ Procedimiento de Pruebas Unitarias
+
+1.  **Validar Dependencias:** Asegúrese de que las librerías necesarias para el *testing* (`junit-jupiter-api`, `mockito-core`, etc.) estén correctamente referenciadas en la configuración del proyecto (classpath).
+2.  **Lanzamiento:** Navegue a la clase **`ContentServiceTest.java`** dentro de la estructura de carpetas de pruebas (`test`).
+3.  **Ejecutar:** Use el comando "Run" o el icono de "Play" de su IDE para ejecutar la suite completa y validar el comportamiento de la lógica de negocio.
