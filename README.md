@@ -62,7 +62,7 @@ Se desarrolló una suite de pruebas para verificar la fiabilidad del sistema.
 
 1.  **Clonación:** Obtenga el código fuente desde el repositorio:
     ```bash
-    git clone <URL_DEL_REPOSITORIO>
+    git clone https://github.com/nohemice/POOUnidad4.git
     ```
 2.  **Configuración del IDE:** Abra el directorio del proyecto en IntelliJ IDEA y verifique que el **SDK del proyecto** esté configurado a una versión compatible de Java.
 3.  **Ejecución:** Localice el punto de entrada, **`MainController.java`**, y ejecute el método `main()` para iniciar la aplicación de consola.
